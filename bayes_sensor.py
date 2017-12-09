@@ -22,6 +22,9 @@ CONF_ENTITY_ID = 'entity_id'  # These are HA defaults
 CONF_NAME = 'name'
 CONF_PLATFORM = 'platform'
 
+STATE_ON = 'on'
+STATE_OFF = 'off'
+
 DEFAULT_NAME = "Bayesian Binary Sensor"
 DEFAULT_PROBABILITY_THRESHOLD = 0.5
 
@@ -30,13 +33,13 @@ VALID_CONFIG = {
     CONF_NAME: 'test_name',
     CONF_PROBABILITY_THRESHOLD: 0.95,
     CONF_DEVICE_CLASS: 'binary_device',
-    CONF_OBSERVATIONS:[
+    CONF_OBSERVATIONS: [
         {
-        CONF_ENTITY_ID: 'switch.kitchen_lights',
-        CONF_P_GIVEN_T: 0.6,
-        CONF_P_GIVEN_F: 0.2,
-        CONF_PLATFORM: 'state',
-        CONF_TO_STATE: 'on'}]
+            CONF_ENTITY_ID: 'switch.kitchen_lights',
+            CONF_P_GIVEN_T: 0.6,
+            CONF_P_GIVEN_F: 0.2,
+            CONF_PLATFORM: 'state',
+            CONF_TO_STATE: 'on'}]
         }
 
 
@@ -58,7 +61,7 @@ def setup_platform(config):
     probability_threshold = config[CONF_PROBABILITY_THRESHOLD]
     device_class = config[CONF_DEVICE_CLASS]
 
-    return    BayesianBinarySensor(
+    return BayesianBinarySensor(
             name, prior, observations, probability_threshold, device_class)
 
 
@@ -81,9 +84,10 @@ class BinarySensorDevice():  # Entity
         return None
 
 
-class BayesianBinarySensor():  # BinarySensorDevice
+class BayesianBinarySensor(BinarySensorDevice):
     """Representation of a Bayesian sensor.
-    Removed some methods I don't think will be needed for this investigation."""
+    Removed some methods I don't think will be needed for this investigation.
+    """
 
     def __init__(self, name, prior, observations, probability_threshold,
                  device_class):
@@ -97,8 +101,8 @@ class BayesianBinarySensor():  # BinarySensorDevice
         self.probability = prior
 
         self.current_obs = OrderedDict({})
-
-        to_observe = set(obs['entity_id'] for obs in self._observations)  # return the entity_id to observ
+        # return the entity_id to observ
+        to_observe = set(obs['entity_id'] for obs in self._observations)
 
         self.entity_obs = dict.fromkeys(to_observe, [])
 
