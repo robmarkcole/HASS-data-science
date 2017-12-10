@@ -5,42 +5,7 @@ https://github.com/home-assistant/home-assistant/blob/dev/homeassistant/componen
 This module is used to explore the sensor.
 """
 from collections import OrderedDict
-
-ATTR_OBSERVATIONS = 'observations'
-ATTR_PROBABILITY = 'probability'
-ATTR_PROBABILITY_THRESHOLD = 'probability_threshold'
-
-CONF_OBSERVATIONS = 'observations'
-CONF_PRIOR = 'prior'
-CONF_PROBABILITY_THRESHOLD = 'probability_threshold'
-CONF_P_GIVEN_F = 'prob_given_false'
-CONF_P_GIVEN_T = 'prob_given_true'
-CONF_TO_STATE = 'to_state'
-
-CONF_DEVICE_CLASS = 'device_class'
-CONF_ENTITY_ID = 'entity_id'  # These are HA defaults
-CONF_NAME = 'name'
-CONF_PLATFORM = 'platform'
-
-STATE_ON = 'on'
-STATE_OFF = 'off'
-
-DEFAULT_NAME = "Bayesian Binary Sensor"
-DEFAULT_PROBABILITY_THRESHOLD = 0.5
-
-VALID_CONFIG = {
-    CONF_PRIOR: 0.1,
-    CONF_NAME: 'test_name',
-    CONF_PROBABILITY_THRESHOLD: 0.95,
-    CONF_DEVICE_CLASS: 'binary_device',
-    CONF_OBSERVATIONS: [
-        {
-            CONF_ENTITY_ID: 'switch.kitchen_lights',
-            CONF_P_GIVEN_T: 0.6,
-            CONF_P_GIVEN_F: 0.2,
-            CONF_PLATFORM: 'state',
-            CONF_TO_STATE: 'on'}]
-        }
+from const import *
 
 
 def update_probability(prior, prob_true, prob_false):
@@ -114,6 +79,36 @@ class BayesianBinarySensor(BinarySensorDevice):
             'numeric_state': self._process_numeric_state,
             'state': self._process_state
         }
+
+#    @asyncio.coroutine
+    def async_added_to_hass(self):
+        """Call when entity about to be added."""
+        @callback
+        # pylint: disable=invalid-name
+        def async_threshold_sensor_state_listener(entity, old_state,
+                                                  new_state):
+            """Handle sensor state changes."""
+            if new_state.state == STATE_UNKNOWN:
+                return
+
+            entity_obs_list = self.entity_obs[entity]
+
+            for entity_obs in entity_obs_list:
+                platform = entity_obs['platform']
+
+                self.watchers[platform](entity_obs)
+
+            prior = self.prior
+            for obs in self.current_obs.values():
+                prior = update_probability(
+                    prior, obs['prob_true'], obs['prob_false'])
+            self.probability = prior  # Updates prior for each observation.
+
+    #        self.hass.async_add_job(self.async_update_ha_state, True)
+
+        entities = [obs['entity_id'] for obs in self._observations]
+#        async_track_state_change(
+#            self.hass, entities, async_threshold_sensor_state_listener)
 
     def _update_current_obs(self, entity_observation, should_trigger):
         """Update current observation."""
