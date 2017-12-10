@@ -68,9 +68,8 @@ class BayesianBinarySensor(BinarySensorDevice):
         self.current_obs = OrderedDict({})
         # return the entity_id to observ
         to_observe = set(obs['entity_id'] for obs in self._observations)
-
         self.entity_obs = dict.fromkeys(to_observe, [])
-
+        # Append observations
         for ind, obs in enumerate(self._observations):
             obs['id'] = ind
             self.entity_obs[obs['entity_id']].append(obs)
@@ -111,14 +110,14 @@ class BayesianBinarySensor(BinarySensorDevice):
 #            self.hass, entities, async_threshold_sensor_state_listener)
 
     def _update_current_obs(self, entity_observation, should_trigger):
-        """Update current observation."""
+        """Update current observation for single entity."""
         obs_id = entity_observation['id']
 
         if should_trigger:
             prob_true = entity_observation['prob_given_true']
             prob_false = entity_observation.get(
                 'prob_given_false', 1 - prob_true)
-
+            # Update prob_true and prob_false
             self.current_obs[obs_id] = {
                 'prob_true': prob_true,
                 'prob_false': prob_false
@@ -175,3 +174,8 @@ class BayesianBinarySensor(BinarySensorDevice):
             ATTR_PROBABILITY: round(self.probability, 2),
             ATTR_PROBABILITY_THRESHOLD: self._probability_threshold,
         }
+
+    #@asyncio.coroutine
+    def async_update(self):
+        """Get the latest data and update the states."""
+        self._deviation = bool(self.probability > self._probability_threshold)
