@@ -127,7 +127,7 @@ class BayesianBinarySensor(BinarySensorDevice):
             self.current_obs.pop(obs_id, None)
 
     def _process_numeric_state(self, entity_observation):
-        """Add entity to current_obs if numeric state conditions are met."""
+        """Add entity to current_obs if numeric state conditions are met (regular sensor)."""
         entity = entity_observation['entity_id']
 
         should_trigger = condition.async_numeric_state(
@@ -138,7 +138,7 @@ class BayesianBinarySensor(BinarySensorDevice):
         self._update_current_obs(entity_observation, should_trigger)
 
     def _process_state(self, entity_observation):
-        """Add entity to current observations if state conditions are met."""
+        """Add entity to current observations if state conditions are met (binary sensor)."""
         entity = entity_observation['entity_id']
 
         should_trigger = condition.state(
